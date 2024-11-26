@@ -30,6 +30,13 @@ function PageBody() {
   return (
     <>
       <WalletInfo></WalletInfo>
+      <div className="card w-96 bg-primary text-primary-content mt-4">
+      <div className="card-body">
+        <h2 className="card-title">Results:</h2>
+        <QueryWinningProposal></QueryWinningProposal>
+        <QueryWinnerName></QueryWinnerName>
+      </div>
+    </div>
     </>
   );
 }
@@ -87,7 +94,7 @@ function ApiData(params: { address: `0x${string}` }) {
     <div className="card w-96 bg-primary text-primary-content mt-4">
       <div className="card-body">
         <h2 className="card-title">Mint the <TokenNameFromApi></TokenNameFromApi> tokens here:</h2>
-        <CheckMinterRole address={params.address}></CheckMinterRole>
+        <RequestTokens address={params.address}></RequestTokens>
       </div>
     </div>
   );
@@ -112,20 +119,20 @@ function TokenNameFromApi() {
   return data.result;
 }
 
-function CheckMinterRole(params: { address: string }) {
-  const [data, setData] = useState<{ result: boolean }>();
+function RequestTokens(params: { address: string }) {
+  const [data, setData] = useState<{ result: boolean, hash: string }>();
   const [isLoading, setLoading] = useState(false);
 
-  const body = { address: 'params.address' };
+  const body = { address: params.address };
 
-  if (isLoading) return <p>Checking for minting permission...</p>;
+  if (isLoading) return <p>Requesting tokens from API...</p>;
   if (!data)
     return (
       <button
         className="btn btn-active btn-neutral"
         onClick={() => {
           setLoading(true);
-          fetch("http://localhost:3001/check-minter-role", {
+          fetch("http://localhost:3001/mint-tokens", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
@@ -140,38 +147,67 @@ function CheckMinterRole(params: { address: string }) {
         Request tokens from API
       </button>
     );
-
-  if (data.result) {
-    return <RequestTokens address={params.address} />;
-  } else {
-    return <p>You do not have minting permission!</p>;
-  }
-}
-
-function RequestTokens(params: { address: string }) {
-  const [data, setData] = useState<{ result: boolean }>();
-  const [isLoading, setLoading] = useState(false);
-
-  const body = { address: params.address };
-
-  if (isLoading) return <p>Requesting tokens from API...</p>;
-  useEffect(() => {
-    fetch("http://localhost:3001/mint-tokens", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setData(data);
-        setLoading(false);
-      });
-    }, []);
-
-    if (!data) return <p>Unable to mint tokens!</p>;
   return (
     <div>
       <p>{data.result ? "Mint successful!" : "Minting failed!"}</p>
+      <p>Transaction hash:</p>
+      <p>{data.hash ? data.hash : "No transaction hash available"}</p>
     </div>
   );
+}
+
+function QueryWinningProposal() {
+  const { data, isError, isLoading } = useReadContract({
+    address: '0x630a3b0cba8ee5de3b02df1fa7e3a587ebb9f1d7',
+    abi: [
+      {
+        "inputs": [],
+        "name": "winningProposal",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "winningProposal",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+    ],
+    functionName: "winningProposal",
+  });
+
+  const name = typeof data === "string" ? data : 0;
+
+  if (isLoading) return <div>Fetching winning proposal</div>;
+  if (isError) return <div>Error fetching winning proposal</div>;
+  return <div>Winning proposal: {name}</div>;
+}
+
+function QueryWinnerName() {
+  const { data, isError, isLoading } = useReadContract({
+    address: '0x630a3b0cba8ee5de3b02df1fa7e3a587ebb9f1d7',
+    abi: [
+      {
+        "inputs": [],
+        "name": "winnerName",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "winnerName",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+    ],
+    functionName: "winnerName",
+  });
+
+  const name = typeof data === "string" ? data : 0;
+
+  if (isLoading) return <div>Fetching winner name</div>;
+  if (isError) return <div>Error fetching winner name</div>;
+  return <div>Winning name: {name}</div>;
 }
