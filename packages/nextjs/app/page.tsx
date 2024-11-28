@@ -120,7 +120,7 @@ function TokenNameFromApi() {
 }
 
 function RequestTokens(params: { address: string }) {
-  const [data, setData] = useState<{ result: boolean, hash: string }>();
+  const [data, setData] = useState<{ result: { hash: string }}>();
   const [isLoading, setLoading] = useState(false);
 
   const body = { address: params.address };
@@ -151,7 +151,7 @@ function RequestTokens(params: { address: string }) {
     <div>
       <p>{data.result ? "Mint successful!" : "Minting failed!"}</p>
       <p>Transaction hash:</p>
-      <p>{data.hash ? data.hash : "No transaction hash available"}</p>
+      <p>{data.result ? data.result.hash : "No transaction hash available"}</p>
     </div>
   );
 }
